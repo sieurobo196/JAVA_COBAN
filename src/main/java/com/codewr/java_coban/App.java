@@ -12,8 +12,10 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,26 +29,49 @@ import org.jsoup.nodes.Element;
  */
 public class App {
 
+    private static String DB_URL = "";
+    private static String DB_USER = "";
+    private static String DB_PASS = "";
+    private static String element_title = "";
+    private static String element_content = "";
+    private static List<String> listLink = new ArrayList<>();
+
     public static void main(String[] args) {
-        //get content html from web
-        String url = "https://www.tutorialspoint.com/log4j/log4j_logging_methods.htm";
-        String eleTitle = ".col-md-7.middle-col>h1";
-        String eleContent = ".content";
+
         String type = "JAVA";
-
-//        HashMap<String, String> hashMap = getContentHtmlfromWeb(url, eleTitle, eleContent, type);
-//        //insert database with jdbc
-//        insertDatabase(hashMap);
+        init();
+        listCamReadFromFileConf();
+        for (String url : listLink) {
+            HashMap<String, String> hashMap = getContentHtmlfromWeb(url, element_title, element_content, type);
+            //insert database with jdbc
+            insertDatabase(hashMap);
+        }
 
     }
 
-    public void init() {
-        Properties prop = new Properties();
-        InputStream input = null;
-        input = App.class.getClassLoader().getResourceAsStream("config.properties");
+    public static void init() {
+        try {
+            Properties prop = new Properties();
+            InputStream input = null;
+            input = App.class.getClassLoader().getResourceAsStream("config.properties");
+            prop.load(input);
+            DB_URL = prop.getProperty("DB_URL");
+            DB_USER = prop.getProperty("DB_USER");
+            DB_PASS = prop.getProperty("DB_PASS");
+            element_title = prop.getProperty("element_title");
+            element_content = prop.getProperty("element_content");
+            System.out.println(DB_URL);
+            System.out.println(DB_USER);
+            System.out.println(DB_PASS);
+            System.out.println(element_title);
+            System.out.println(element_content);
+        } catch (IOException ex) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 
-    public void listCamReadFromFileConf() {
+    public static void listCamReadFromFileConf() {
         String pathFileCam = "./conf/";
         BufferedReader br = null;
         FileReader fr = null;
@@ -62,26 +87,23 @@ public class App {
                 } else {
                     count++;
                     System.out.println(strCurrentLine);
+                    listLink.add(strCurrentLine);
 
                 }
             }
 
         } catch (IOException e) {
-
+            System.out.println("error");
         } finally {
-
             try {
-
                 if (br != null) {
                     br.close();
                 }
-
                 if (fr != null) {
                     fr.close();
                 }
-
             } catch (IOException ex) {
-
+                System.out.println("error");
             }
 
         }
@@ -121,12 +143,10 @@ public class App {
             System.out.println("Connecting to a selected database...");
             conn = DriverManager.getConnection(DB_URL, USER, PASS);
             System.out.println("Connected database successfully...");
-//            stmt = conn.createStatement();
             Integer id = null;
             String title = hashMap.get("title");
             String map_url = hashMap.get("map_url");
             String content = hashMap.get("content");
-//            String content = "<b>kaka</b>";
             String type = hashMap.get("type");
             String meta_des = title;
             String meta_keys = title;
@@ -140,29 +160,6 @@ public class App {
             String query = "INSERT INTO `articles` (id, title, map_url, meta_des, meta_keys, des_article,"
                     + " image, content, createdDate, updatedDate, isDeleted, type, lang, view, isSubmit)"
                     + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-//                    + "null, '"
-//                    + title //title
-//                    + "', '"
-//                    + map_url //map_url
-//                    + "', '"
-//                    + meta_des //meta_des
-//                    + "', '"
-//                    + meta_keys //meta_keys
-//                    + "', null, null, '" // des, image
-//                    + content //content
-//                    + "' ,'"
-//                    + dateFormat.format(newDate) //created date
-//                    + "', null, '"
-//                    + isDeleted // is_deleted
-//                    + "', '"
-//                    + type //type
-//                    + "', '"
-//                    + lang //lang
-//                    + "', '"
-//                    + view //view
-//                    + "', '"
-//                    + isSubmit//isSubmit
-//                    + "')";
             PreparedStatement preparedStmt = conn.prepareStatement(query);
             preparedStmt.setObject(1, null);
             preparedStmt.setObject(2, title);
@@ -180,7 +177,6 @@ public class App {
             preparedStmt.setObject(14, 0);
             preparedStmt.setObject(15, 0);
             boolean insert = preparedStmt.execute();
-//            stmt.executeUpdate(sql);
             System.out.println("Inserted records " + insert);
 
         } catch (SQLException se) {
